@@ -69,6 +69,23 @@ class FormationCell:
         self._metadata_dict = dict()
 
 
+    def __repr__(self):
+        """
+        Returns a string representation of the object"""
+
+        if self.is_baseline_formation():
+            formation_type = 'Baseline Formation'
+        else:
+            formation_type = 'Fast Formation'
+
+        if self.is_room_temp():
+            temperature_type = 'Room Temp'
+        else:
+            temperature_type = '45C'
+
+        return f"Cell {self.cellid}, {formation_type}, {temperature_type}"
+
+
     def get_metadata(self):
         """
         Returns metadata for this cell as a dict
@@ -853,6 +870,7 @@ class FormationCell:
         stats = dict()
 
         df = self.get_aging_data_cycles()
+
         dch_capacity = df['Discharge Capacity (Ah)']
         cyc_number   = df['Cycle Number']
 
@@ -868,25 +886,34 @@ class FormationCell:
 
         # Filter the capacity retention vs cycle number data to get a clean
         # interp here
-        idx_bad = []
 
-        for idx in range(len(capacity_retention) - 1):
+        # Method 1
+        # idx_bad = []
 
-            curr_capacity = capacity_retention[idx]
-            next_capacity = capacity_retention[idx + 1]
-            if next_capacity - curr_capacity > 0.2:
+        # for idx in range(len(capacity_retention) - 1):
 
-                idx_bad.append(idx)
+        #     curr_capacity = capacity_retention[idx]
+        #     next_capacity = capacity_retention[idx + 1]
+        #     if next_capacity - curr_capacity > 0.2:
 
-                # Subsequent 3 cycles also belong to diagnostic tests
-                for jdx in [1, 2, 3]:
-                    if idx + jdx < len(capacity_retention) - 1:
-                        idx_bad.append(idx + jdx)
+        #         idx_bad.append(idx)
 
-        capacity_retention[idx_bad] = np.nan
+        #         # Subsequent 3 cycles also belong to diagnostic tests
+        #         for jdx in [1, 2, 3]:
+        #             if idx + jdx < len(capacity_retention) - 1:
+        #                 idx_bad.append(idx + jdx)
 
-        df = pd.Series(capacity_retention)
-        capacity_retention = df.interpolate(method='linear').bfill().to_numpy()
+        # capacity_retention[idx_bad] = np.nan
+
+        # Method 2
+        idx = np.where((df['Total Charge Time (s)'] > 8500) |
+                   (df['Total Charge Time (s)'] < 100))[0]
+        df = df.copy()
+        capacity_retention[idx] = np.nan
+
+        df_ret = pd.Series(capacity_retention)
+
+        capacity_retention = df_ret.interpolate(method='linear').bfill().to_numpy()
 
         # EOL metrics
         stats['cycles_to_50_pct'] = find_cycles_to_target_retention(capacity_retention, cyc_number, 0.5)
@@ -941,6 +968,7 @@ class FormationCell:
 
                 stats[f'c20_over_c3_dch_cap_at_c{cycle_number}_ah'] = result['dch_capacity'].iloc[-1] / \
                     result_list_c3[idx]['dch_capacity'].iloc[-1]
+
 
         # Capacity retention and cell resistance at different cycle numbers
         # Cycle #3 corresponds to the first available cycle
@@ -1086,7 +1114,9 @@ class FormationCell:
         HPPC pulse information; uses step indices to infer start and end of each
         pulse.
 
-        Returns a list of dictionaries. Each dictionary holds:
+        Outputs:
+        ---------
+        A list of dictionaries. Each dictionary holds:
           - key: cycle index containing the HPPC cycle
           - value: a Pandas DataFrame
         """
@@ -1103,6 +1133,14 @@ class FormationCell:
 
             curr_df = df[df['Cycle Number'] == curr_cyc]
 
+            # Initialize a bunch of variables for exporting raw outputs
+            voltage_vec_all = []
+            capacity_0_vec_all = []
+            voltage_0_vec_all = []
+            current_vec_all = []
+            time_vec_all = []
+            df_raw_list = []
+
             # Process each pulse
             pulse_list = []
             for idx, point in enumerate(curr_df['Step Index'].values):
@@ -1114,7 +1152,7 @@ class FormationCell:
                 if point == STEP_INDEX_HPPC_DISCHARGE \
                     and curr_df['Step Index'].iloc[idx-1] != STEP_INDEX_HPPC_DISCHARGE:
 
-                    capacity = curr_df['Charge Capacity (Ah)'].iloc[idx-1]
+                    capacity_0 = curr_df['Charge Capacity (Ah)'].iloc[idx-1]
                     voltage_0 = curr_df['Potential (V)'].iloc[idx-1]
 
                     # Detect index corresponding to end of pulse
@@ -1130,6 +1168,18 @@ class FormationCell:
                     time_vec = curr_df['Test Time (s)'].iloc[idx:jdx] - \
                                curr_df['Test Time (s)'].iloc[idx]
 
+                    voltage_0_vec = voltage_0 * np.ones(np.size(voltage_vec))
+                    capacity_0_vec = capacity_0 * np.ones(np.size(voltage_vec))
+
+                    curr_dict = dict()
+                    curr_dict['voltage_v'] = voltage_vec
+                    curr_dict['current_a'] = current_vec
+                    curr_dict['time_s'] = time_vec
+                    curr_dict['voltage_0_v'] = voltage_0_vec
+                    curr_dict['capacity_0_ah'] = capacity_0_vec
+                    curr_df_raw = pd.DataFrame(curr_dict)
+                    df_raw_list.append(curr_df_raw)
+
                     # Pulses that did not last 10 seconds could indicate a fault
                     # in the test. We want to code to fail a this point so we
                     # can look more carefully at what is going on.
@@ -1144,7 +1194,7 @@ class FormationCell:
                     current_mean = np.abs(np.mean(current_vec))
 
                     result = dict()
-                    result['capacity'] = capacity
+                    result['capacity'] = capacity_0
                     result['voltage'] = voltage_0
                     result['resistance_1s_ohm']  = (voltage_0 - voltage_at_1_sec) / current_mean
                     result['resistance_3s_ohm']  = (voltage_0 - voltage_at_3_sec) / current_mean
@@ -1153,11 +1203,13 @@ class FormationCell:
 
                     pulse_list.append(result)
 
+            df_raw_all = pd.concat(df_raw_list)
 
             curr_result = dict()
             curr_result['cycle_index'] = curr_cyc
             curr_result['data'] = pd.DataFrame(pulse_list)
-
+            curr_result['raw_pulses'] = df_raw_all
+            curr_result['raw_all'] = curr_df
             results_list.append(curr_result)
 
         return results_list
@@ -1189,8 +1241,8 @@ def find_cycles_to_target_retention(retention, cyc_number, target_retention):
     Returns first cycle to go below target retention
 
     Args:
-      cyc_number (integer)
       retention (0-1), capacity retention (capacity / initial capacity)
+      cyc_number (integer), cycle numbers corresponding to the retentions
       target_retention (0-1)
 
     Returns:
@@ -1198,7 +1250,7 @@ def find_cycles_to_target_retention(retention, cyc_number, target_retention):
     """
 
     if min(retention) > target_retention:
-        return np.nan
+        return np.max(cyc_number)
 
     return cyc_number[np.where(retention < target_retention)[0][0]]
 

@@ -20,6 +20,33 @@ OUTPUT_PATH_CORRELATIONS_TABLE = 'output/2021-03-fast-formation-esoh-fits'
 IDX_ESOH_FRESH_CYCLE = 3
 IDX_ESOH_AGED_CYCLE = 56
 
+
+def export_hppc_data(cellid):
+    """
+    Exports HPPC data for a given cellid
+    """
+
+    assert cellid > 0 and cellid <= 40
+
+    formation_cell = FormationCell(cellid)
+
+    res_list = formation_cell.process_diagnostic_hppc_data()
+
+    for res in res_list:
+
+        cycle_index = res['cycle_index']
+        print(f'Exporting HPPC data for cell {cellid}, cycle {cycle_index}...')
+
+        data = res['data']
+        data.to_csv(f'hppc_data_cell_{cellid}_processed_cycle_{cycle_index}.csv')
+
+        raw_pulses = res['raw_pulses']
+        raw_pulses.to_csv(f'hppc_data_cell_{cellid}_raw_pulses_cycle_{cycle_index}.csv')
+
+        raw_all = res['raw_all']
+        raw_all.to_csv(f'hppc_data_cell_{cellid}_raw_all_cycle_{cycle_index}.csv')
+
+
 def append_esoh_metrics_to_correlations_table():
     """
     Take eSOH metrics and append it to the correlations table. Save a new
