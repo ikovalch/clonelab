@@ -86,6 +86,7 @@ def get_label_registry():
 
     for idx in cycle_target_list:
         label_registry[f'dcr_10s_5_soc_at_c{idx}']  = (f'$R_{{10s, 5\% SOC}}$, c{idx} $(\\Omega)$', (0.025, 0.055))
+        label_registry[f'dcr_1s_5_soc_at_c{idx}']  = (f'$R_{{1s, 5\% SOC}}$, c{idx} $(\\Omega)$', (0.025, 0.055))
         label_registry[f'dcr_10s_50_soc_at_c{idx}']  = (f'$R_{{10s, 50\% SOC}}$, c{idx} $(\\Omega)$', (0.025, 0.055))
         label_registry[f'dcr_10s_90_soc_at_c{idx}']  = (f'$R_{{10s, 90\% SOC}}$, c{idx} $(\\Omega)$', (0.025, 0.055))
         label_registry[f'dcr_10s_5_soc_at_c{idx}']  = (f'$R_{{10s, 5\% SOC}}$, c{idx} $(\\Omega)$', (0.025, 0.055))
@@ -98,13 +99,32 @@ def get_label_registry():
         label_registry[f'esoh_c{idx}_x0'] = (f'$x_{{0}}$, c{idx}', (None, None))
         label_registry[f'esoh_c{idx}_x100'] = (f'$x_{{100}}$, c{idx}', (None, None))
 
+    # Disable showing cycle number in label if it's the 'first' cycle (c3)
+    label_registry[f'dcr_10s_5_soc_at_c3']  = (f'$R_{{10s, 5\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_1s_5_soc_at_c3']  = (f'$R_{{1s, 5\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_10s_50_soc_at_c3']  = (f'$R_{{10s, 50\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_10s_90_soc_at_c3']  = (f'$R_{{10s, 90\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_10s_5_soc_at_c3']  = (f'$R_{{10s, 5\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_10s_5_soc_at_c3']  = (f'$R_{{10s, 5\% SOC}}$ $(\\Omega)$', (0.025, 0.055))
+    label_registry[f'dcr_10s_90_soc_at_c3'] = (f'$R_{{10s, 90\% SOC}}$ $(\\Omega)$', (None, None))
+    label_registry[f'dcr_10s_0_soc_at_c3']  = (f'$R_{{10s, 4\% SOC}}$ $(\\Omega)$', (None, None))
+    label_registry[f'dcr_10s_10_soc_at_c3'] = (f'$R_{{10s, 10\% SOC}}$ $(\\Omega)$', (None, None))
+    label_registry[f'esoh_c3_y0'] = (f'$y_{{0}}$', (None, None))
+    label_registry[f'esoh_c3_y100'] = (f'$y_{{100}}$', (None, None))
+    label_registry[f'esoh_c3_x0'] = (f'$x_{{0}}$', (None, None))
+    label_registry[f'esoh_c3_x100'] = (f'$x_{{100}}$', (None, None))
+
+
     for idx in cycle_target_list[1::]:
         label_registry[f'var_q_c20_c{idx}_c3_ah'] = (f'$Var(Q(V)), C/20, c{idx}-c3$ (mAh)', (0, 65))
 
     label_registry['var_q_1c_c100_c10_ah'] = ('Var(Q(V)), 1C, c100-c10 (Ah)', (None, None))
     label_registry['var_q_1c_c100_c10_mah'] = ('Var(Q(V)), 1C, c100-c10 (mAh)', (None, None))
-    label_registry[f'cycles_to_70_pct'] = ('Cycles to 70%', (None, None))
     label_registry['cycles_to_80_pct'] = ('Cycles to 80%', (None, None))
+    label_registry['cycles_to_70_pct'] = ('Cycles to 70%', (None, None))
+    label_registry['cycles_to_60_pct'] = ('Cycles to 60%', (None, None))
+    label_registry['cycles_to_50_pct'] = ('Cycles to 50%', (None, None))
+    label_registry['thickness_mm'] = ('Thickness (mm)', (None, None))
     label_registry['esoh_c3_Cn'] = ('$C_n$, c3 (Ah)', (1.9, 3.0))
     label_registry['esoh_c56_Cn'] = ('$C_n$, c56 (Ah)', (1.9, 3.0))
     label_registry['esoh_c159_Cn'] = ('$C_n$, c159 (Ah)', (1.9, 3.0))
@@ -120,10 +140,13 @@ def get_label_registry():
     label_registry['esoh_c159_neg_excess'] = ('Neg Excess, c159 (Ah)', (0.2, 0.7))
     label_registry['esoh_c262_neg_excess'] = ('Neg Excess, c262 (Ah)', (0.2, 0.7))
     label_registry['esoh_c365_neg_excess'] = ('Neg Excess, c365 (Ah)', (0.2, 0.7))
-    label_registry['form_final_discharge_capacity_ah'] = ('$Q_d$ (Ah)', (None, None))
+    label_registry['form_last_charge_voltage_after_1s'] = ('Form last chg V, 1s', (None, None))
+    label_registry['form_final_discharge_capacity_ah'] = ('$Q_\mathrm{d}$ (Ah)', (None, None))
     label_registry['form_first_discharge_capacity_below_3p2v_ah'] = ('$Q_d<3.2V (Ah)', (None, None))
-    label_registry['form_coulombic_efficiency'] = ('$CE_f$', (None, None))
+    label_registry['form_qc_minus_qd_ah'] = ('$Q_\mathrm{LLI}$ (Ah)', (None, None))
+    label_registry['form_coulombic_efficiency'] = ('$\mathrm{CE}_\mathrm{f}$', (None, None))
     label_registry['form_6hr_rest_mv_per_day_steady'] = ('$dV/dt_{ss}$ (mV/day)', (None, None))
+    label_registry['form_first_cycle_efficiency'] = ('Form 1st Cyc Eff.', (None, None))
     label_registry['form_6hr_rest_delta_voltage_v'] = ('$\Delta V_{rest,6hr}$ (V)', (None, None))
     label_registry['rpt_c3_delta_v'] = ('$\Delta V_{1hr, RPT}, c3$ (V)', (None, None))
 
@@ -191,7 +214,7 @@ def build_correlation_table():
         # Add information from the formation cycles
         curr_summary.update(cell.get_formation_test_summary_statistics())
         curr_summary['form_coulombic_efficiency'] = curr_summary['form_final_discharge_capacity_ah'] / curr_summary['form_first_charge_capacity_ah']
-
+        curr_summary['form_qc_minus_qd_ah'] = curr_summary['form_first_charge_capacity_ah'] - curr_summary['form_final_discharge_capacity_ah']
         # Add the results from the aging test
         curr_summary.update(cell.get_aging_test_summary_statistics())
 
